@@ -44,9 +44,25 @@
     }
 
     .note {
-      margin: 0.6rem 0 1.6rem;
+      margin: 0.6rem 0 1rem;
       color: var(--muted);
       font: 0.95rem/1.4 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    button {
+      margin: 0 0 1.6rem;
+      padding: 0.55rem 0.95rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--ink);
+      font: 0.9rem/1 ui-sans-serif, system-ui, sans-serif;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
     }
 
     h2 {
@@ -122,9 +138,10 @@
 </head>
 <body>
   <main>
-    <p class="eyebrow">Placeholder database</p>
+    <p class="eyebrow">Class roster</p>
     <h1>Students</h1>
     <p class="note">Loading names…</p>
+    <button type="button" id="shuffle" disabled>Shuffle</button>
     <h2>Competency averages</h2>
     <p class="note scores-note">Loading averages…</p>
     <ul class="scores"></ul>
@@ -133,8 +150,37 @@
   <script>
     const note = document.querySelector(".note");
     const list = document.querySelector(".roster");
+    const shuffleButton = document.querySelector("#shuffle");
     const scoresNote = document.querySelector(".scores-note");
     const scores = document.querySelector(".scores");
+    let students = [];
+
+    function renderNames() {
+      list.replaceChildren();
+      for (const student of students) {
+        const item = document.createElement("li");
+        const id = document.createElement("span");
+        const name = document.createElement("span");
+        id.className = "id";
+        id.textContent = student.student_id;
+        name.className = "name";
+        name.textContent = student.name;
+        item.append(id, name);
+        list.append(item);
+      }
+    }
+
+    function shuffleNames() {
+      for (let i = students.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const current = students[i];
+        students[i] = students[j];
+        students[j] = current;
+      }
+      renderNames();
+    }
+
+    shuffleButton.addEventListener("click", shuffleNames);
 
     fetch("/api/students")
       .then((response) => {
@@ -143,22 +189,14 @@
         }
         return response.json();
       })
-      .then((students) => {
+      .then((rows) => {
+        students = rows;
         note.textContent = students.length + " students";
-        for (const student of students) {
-          const item = document.createElement("li");
-          const id = document.createElement("span");
-          const name = document.createElement("span");
-          id.className = "id";
-          id.textContent = student.student_id;
-          name.className = "name";
-          name.textContent = student.name;
-          item.append(id, name);
-          list.append(item);
-        }
+        shuffleButton.disabled = students.length < 2;
+        renderNames();
       })
       .catch(() => {
-        note.textContent = "Could not load names from the placeholder database.";
+        note.textContent = "Could not load names from the database.";
       });
 
     fetch("/api/competencies")
