@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Students</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1c1915;
+      --muted: #6b645c;
+      --line: #e4ddd4;
+      --paper: #f7f4ef;
+      --card: #fffdf9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
+      font: 17px/1.45 Georgia, "Iowan Old Style", Palatino, serif;
+    }
+
+    main {
+      width: min(40rem, calc(100% - 2.5rem));
+      margin: 3.5rem auto 4rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.4rem;
+      color: var(--muted);
+      font: 0.75rem/1.2 ui-sans-serif, system-ui, sans-serif;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 2.4rem;
+      font-weight: 500;
+    }
+
+    .note {
+      margin: 0.6rem 0 1.6rem;
+      color: var(--muted);
+      font: 0.95rem/1.4 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.2rem;
+      font-weight: 500;
+    }
+
+    .scores {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 0 0 2rem;
+      padding: 0;
+      list-style: none;
+    }
+
+    .scores:empty { display: none; }
+
+    .scores li {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      margin: 0;
+      padding: 0.9rem 1rem;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .scores .value {
+      font-size: 1.7rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .scores .label {
+      color: var(--muted);
+      font: 0.8rem/1.3 ui-sans-serif, system-ui, sans-serif;
+    }
+
+    .roster {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+
+    .roster:empty { display: none; }
+
+    .roster li {
+      display: flex;
+      gap: 1rem;
+      align-items: baseline;
+      padding: 0.85rem 1.1rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .roster li:first-child { border-top: 0; }
+
+    @media (min-width: 700px) {
+      .scores { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    .id {
+      width: 1.6rem;
+      color: var(--muted);
+      font: 0.85rem/1 ui-sans-serif, system-ui, sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Placeholder database</p>
+    <h1>Students</h1>
+    <p class="note">Loading names…</p>
+    <h2>Competency averages</h2>
+    <p class="note scores-note">Loading averages…</p>
+    <ul class="scores"></ul>
+    <ol class="roster"></ol>
+  </main>
+  <script>
+    const note = document.querySelector(".note");
+    const list = document.querySelector(".roster");
+    const scoresNote = document.querySelector(".scores-note");
+    const scores = document.querySelector(".scores");
+
+    fetch("/api/students")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Could not load students");
+        }
+        return response.json();
+      })
+      .then((students) => {
+        note.textContent = students.length + " students";
+        for (const student of students) {
+          const item = document.createElement("li");
+          const id = document.createElement("span");
+          const name = document.createElement("span");
+          id.className = "id";
+          id.textContent = student.student_id;
+          name.className = "name";
+          name.textContent = student.name;
+          item.append(id, name);
+          list.append(item);
+        }
+      })
+      .catch(() => {
+        note.textContent = "Could not load names from the placeholder database.";
+      });
+
+    fetch("/api/competencies")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Could not load averages");
+        }
+        return response.json();
+      })
+      .then((averages) => {
+        scoresNote.textContent = "Mean of each score, from 1 to 5.";
+        for (const item of averages) {
+          const row = document.createElement("li");
+          const value = document.createElement("span");
+          const label = document.createElement("span");
+          value.className = "value";
+          value.textContent = item.average == null ? "—" : Number(item.average).toFixed(2);
+          label.className = "label";
+          label.textContent = item.label;
+          row.append(value, label);
+          scores.append(row);
+        }
+      })
+      .catch(() => {
+        scoresNote.textContent = "Could not load competency averages.";
+      });
+  </script>
+</body>
+</html>
