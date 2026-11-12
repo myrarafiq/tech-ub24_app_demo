@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: students
+      POSTGRES_PASSWORD: students
+      POSTGRES_DB: students
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U students -d students"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  seed:
+    build: .
+    command: python docker/load_seed.py
+    environment:
+      DATABASE_URL: postgresql://students:students@db:5432/students
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://students:students@db:5432/students
+      PORT: "8000"
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+volumes:
+  pgdata:
